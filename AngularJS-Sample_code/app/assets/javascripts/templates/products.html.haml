@@ -1,0 +1,25 @@
+.products-header.account-search-panel
+  .search-field-wrap.form-group.form-group-lg
+    %input.form-control.search-dark-icon-left.font-bigger(ng-model="term" placeholder="Search Products" bind-to-filter='term')
+.elements-list-wrapper
+  .elements-list.elements-list-5
+    .tool-wrapper.report.cursor-pointer(ng-repeat='tool in products')
+      %span.not-decoration
+        %span.as-block.tool.element(ng-click="goToSurveyResults(tool)")
+          %span.as-block(rating='' rating-class='tool.community_grade_class' grade='tool.community_grade')
+          %span.as-block.image-wrapper
+            %img(ng-src="{{tool.img}}" )
+          %span.as-block.name-wrapper
+            %span.as-block.h6.text-uppercase
+              {{tool.name}}
+          .product-information
+            %span.product-rating
+              %span.size-50(rating='' rating-class='tool.rating_class' grade='tool.grade' show-widget='true' )
+              %span.rating-label
+                Account Grade
+          .educators
+            %ng-pluralize{:count => "tool.educators", :when => "{ 1: '{} response', other: '{} responses' }"}
+
+  .text-center.clear(ng-if='productsTotalItems > 20')
+    %pagination(on-select-page="productsSelectPage(page)" page='productsCurrentPage()' total-items="productsTotalItems" items-per-page='20' max-size="10" rotate="false" previous-text="Previous" next-text="Next")
+

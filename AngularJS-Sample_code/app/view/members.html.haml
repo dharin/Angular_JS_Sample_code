@@ -1,0 +1,229 @@
+.account-members.portfolio(ng-controller="MembersCtrl" ng-init="init(#{account.id}, '#{account.accountable_type}', #{account.accountable_id}, #{account.accountable.acting_as.id})" )
+  .row.dash-section-subheader
+    .form-inline
+      .account-sub-cats.col-md-7.col-xs-7
+        .form-group
+          .category-amount
+            %i.fa.fa-users
+          %a(href = "javascript:void(0);" ng-click="currentView = 'members'" ng-class="{selected: currentView == 'members'}")
+            Educators
+        .form-group
+          .category-amount
+            -# {{organizationsAdministratorsTotalItems}}
+            %i.fa.fa-users
+          %a(href = "javascript:void(0);" ng-click="currentView = 'administrators'" ng-class="{selected: currentView == 'administrators'}")
+            Account Administrators
+        .form-group
+          .category-amount
+            -# {{organizationsApplicationsTotalItems}}
+            %i.fa.fa-file-text-o
+          %a(href = "javascript:void(0);" ng-click="currentView = 'applications'" ng-class="{selected: currentView == 'applications'}")
+            Applications
+
+      .col-md-5.col-xs-5
+        .right-menu-options
+          .pull-right
+            .form-group(ng-show="currentView == 'members'")
+              %a(href="javascript:void(0);"  ng-click='addMember()')
+                %i.glyphicon.glyphicon-plus.subheader-action
+                Add Member
+            .form-group(ng-show="currentView == 'members'")
+              %a(href="javascript:void(0);"  ng-click='uploadMembers()' ng-if="false")
+                %i.glyphicon.glyphicon-open.subheader-action
+                Upload Members
+            .form-group(ng-show="currentView == 'administrators'")
+              %a(href="javascript:void(0);"  ng-click='addAdministrator()')
+                %i.glyphicon.glyphicon-plus
+                Add Administrator
+            .form-group(ng-show="currentView == 'applications'")
+              %a(href="javascript:void(0);"  ng-click='createApplicationTemplate()')
+                %i.glyphicon.glyphicon-plus
+                New Application Template
+
+            .form-group(ng-show="currentView == 'members'")
+              .account-search-field-wrap.m-t-none.m-b-none
+                .search-field-wrap
+                  %input.form-control.search-dark-icon-left(ng-model="member_search_term" placeholder="Search Members" bind-to-filter='member_search_term' ng-change="onFilterMembers()")
+            .form-group(ng-show="currentView == 'administrators'")
+              .account-search-field-wrap.m-t-none.m-b-none
+                .search-field-wrap
+                  %input.form-control.search-dark-icon-left(ng-model="administrator_search_term" placeholder="Search Adminstrators" bind-to-filter='administrator_search_term' ng-change="onFilterAdministrators()")
+            .form-group(ng-show="currentView == 'applications'")
+              .account-search-field-wrap.m-t-none.m-b-none
+                .search-field-wrap
+                  %input.form-control.search-dark-icon-left(ng-model="application_search_term" placeholder="Search Applications" bind-to-filter='application_search_term' ng-change="onFilterApplications()")
+
+  .row
+    .col-md-12
+      .members-container
+        #notify-import.ui-notify(ng-show="showNotification")
+          .ui-notify-message.ui-notify-message-style
+            %a.ui-notify-close.ui-notify-cross(ng-click="showNotification = false") x
+            %h1
+              {{notificationHeader}}
+            %p
+              {{notificationMessage}}
+        .membership-breadcrumbs.pull-right
+          %span.control-link.control-link-blue(ng-click='membershipBreadcrumbSelected(null)' ng-if="membershipBreadcrumbs.length > 0" id="org_#{account.accountable.acting_as.id}")
+            = account.accountable.name
+          %span(ng-if="membershipBreadcrumbs.length == 0" id="org_#{account.accountable.acting_as.id}")
+            = account.accountable.name
+          %span(ng-repeat="membership in membershipBreadcrumbs track by $index")
+            = " / "
+            %span(ng-click='membershipBreadcrumbSelected(membership)' ng-class="{'control-link control-link-blue':!$last}" id="org_{{membership.org_id}}")
+              {{membership.member.name | limitTo: 30 }}{{membership.member.name.length > 30 ? '...' : ''}}
+
+  .members(ng-show="currentView == 'members'")
+    / SUB NAV TABS
+    %ul.nav.nav-tabs{:role => "tablist"}
+      %li.active{:role => "member-sub-nav"}
+        %a{"aria-controls" => "organizations", "data-toggle" => "tab", :href => "#organizations", :role => "tab", id: "organizations-members-sub-nav" }
+          %span
+            %ng-pluralize{:count => "organizationsMembershipsTotalItems", :when => "{ 1: '{} Organization', other: '{} Organizations' }"}
+
+      %li{:role => "member-sub-nav"}
+        %a{"aria-controls" => "educators", "data-toggle" => "tab", :href => "#educators", :role => "tab", id: "organizations-users-sub-nav"}
+          %span
+            %ng-pluralize{:count => "usersMembershipsTotalItems", :when => "{ 1: '{} Person', other: '{} People' }"}
+            %ng-pluralize
+
+    .tab-content
+      #organizations.tab-pane.active{:role => "tabpanel"}
+        .table.account-table
+          %table.table.table-hover
+            %thead
+              %th.left
+                Organization Member
+              %th.right
+                Students
+              %th.right
+                Educators
+              %th.right
+                Products
+              %th.left
+                Actions
+            %tbody
+              %tr(ng-repeat="membership in organizationsMemberships" ng-class="{bordered: $last}" )
+                %td.left
+                  %a(href='javascript:void(0);' ng-click='showOrganizationMembers(membership)' )
+                    {{membership.member.name}}
+                %td.right
+                  {{membership.member.student_count | number:0}}
+                %td.right
+                  {{membership.member.user_count | number:0}}
+                %td.right
+                  {{membership.member.tool_count | number:0}}
+                %td.left
+                  %a.m-r-sm(href='javascript:void(0);' style='display:none')
+                    Application
+                  %a.m-r-sm(href='javascript:void(0);' ng-click='showMemberProfile(membership)')
+                    Profile
+        .text-center(ng-show="organizationsMembershipsTotalItems > 20 && !organizationsMembershipsLoading")
+          %pagination(on-select-page="organizationsMembershipsSelectPage(page)"  page='organizationsMembershipsPage' total-items="organizationsMembershipsTotalItems" items-per-page='20' max-size="10" rotate="false" previous-text="Previous" next-text="Next")
+        .information(ng-show="organizationsMemberships.length == 0")
+          %span(ng-show="organizationsMembershipsLoading")
+            Loading Organizations...
+          %span(ng-hide="organizationsMembershipsLoading")
+            No Organizations Available
+
+      #educators.tab-pane{:role => "tabpanel"}
+        .table.account-table
+          %table.table.table-hover
+            %thead
+              %th.left(width="25%" colspan="2")
+                Educator Member
+              %th.left(width="20%")
+                Grade Levels
+              %th.left(width="20%")
+                Subjects
+              %th.center(width="10%")
+                Products
+              %th.left(width="11%")
+                Status
+              %th.left(width="14%")
+                Actions
+            %tbody
+              %tr(ng-repeat="membership in usersMemberships" ng-class="{bordered: $last}" )
+                %td.left
+                  %avatar(img="{{membership.member.avatar_url}}" full-name="{{membership.member.name}}" size='sm')
+                %td.left
+                  %span.td-member-name(ng-bind="membership.member.name")
+                %td.left
+                  %span(ng-repeat="grade in membership.tags | filter:{tag_type:'grade_level'}")
+                    {{grade.name}}{{$last ? '' : ', '}}
+                %td.left
+                  %span(ng-repeat="subject in membership.tags | filter:{tag_type:'subject'}")
+                    {{subject.name}}{{$last ? '' : ', '}}
+                %td.center
+                  %span(ng-bind="membership.member.tool_count")
+                %td.left
+                  %span.approved-status(ng-if="membership.approved") Approved
+                  %span.pending-status(ng-if="!membership.approved && membership.approved_at == null") Pending
+                  %span.rejected-status(ng-if="!membership.approved && membership.approved_at != null") Rejected
+                %td.left
+                  %a.m-r-sm(ng-href="{{membership.member.public_profile_url}}" target="_blank" ng-if="membership.member.public_profile" title="View Profile")
+                    =image_tag("icons/profile-icon.png")
+                  %a.m-r-sm(href='javascript:void(0);' ng-click="membership.approve()" ng-if="membership.approved_at == null" title="Approve")
+                    =image_tag("icons/approve-icon.png")
+                  %a.m-r-sm(href='javascript:void(0);' ng-click="membership.reject()" ng-if="membership.approved_at == null" title="Decline")
+                    =image_tag("icons/reject-icon.png")
+                  %a.m-r-sm(href='javascript:void(0);' ng-click="deleteMembership(membership)" ng-if="membership.approved" title="Delete")
+                    =image_tag("icons/trash-icon.png")
+                  %a.m-r-sm(href="javascript:void(0);" title="Application" ng-click="onViewApplication(membership)" ng-show="hasApplication(membership)")
+                    =image_tag("icons/comment-icon.png")
+        .text-center(ng-show="usersMembershipsTotalItems > 20")
+          %pagination(on-select-page="usersMembershipsSelectPage(page)"  page='usersMembershipsPage' total-items="usersMembershipsTotalItems" items-per-page='20' max-size="10" rotate="false" previous-text="Previous" next-text="Next")
+        .information(ng-show="usersMemberships.length == 0")
+          No Members Available
+
+  .applications(ng-show="currentView == 'applications'")
+    %table.table
+      %thead
+        %tr
+          %th Application Name
+          %th Target(s)
+          %th Status
+          %th Applicants
+          %th
+      %tbody
+        %tr(ng-repeat="applicationTemplate in applicationTemplates")
+          %td
+            {{applicationTemplate.name}}
+          %td
+            {{applicationTemplate.target_types.join(", ")}}
+          %td
+            {{applicationTemplate.active ? 'Active' : 'Inactive'}}
+          %td
+            %a.btn.btn-link.btn-xs(href="javascript:void(0);" ng-click="openApplications(applicationTemplate)" ng-disabled="applicationTemplate.application_count == 0")
+              %ng-pluralize(count="applicationTemplate.application_count" when="{'1':'1 applicant', 'other':'{} applicants'}")
+          %td
+            %a.btn.btn-link.btn-xs(href="javascript:void(0);" ng-click="previewSubmissionApplication(applicationTemplate)")
+              Preview
+            |
+            %a.btn.btn-link.btn-xs(href="javascript:void(0);" ng-click="editSubmissionApplication(applicationTemplate)")
+              Edit
+            |
+            %a.btn.btn-link.btn-xs(href="javascript:void(0);" ng-click="removeApplicationTemplate(applicationTemplate)")
+              Delete
+
+  .administrators(ng-show="currentView == 'administrators'")
+    .admin-list
+      %ul
+        %li.admin-member(ng-repeat="membership in accountAdmins" )
+          .image-wrapper
+            %avatar(img="{{membership.member.avatar}}" full-name="{{membership.member.name}}" size="md")
+            / %img(ng-src='{{accountAdmin.member.avatar}}')
+          .member-status.approved.icon-checked-white(ng-show="membership.approved")
+          .member-status.icon-bell-white(ng-hide="membership.approved")
+          .name
+            {{membership.member.name}}
+          .btn-wrap
+            .not-approved(ng-hide="membership.approved")
+              .btn.btn-primary.btn-sm(ng-click="approveAdmin(membership)" ng-hide="membership.approved" )
+                Approve
+              .btn.btn-danger.btn-sm(ng-click="removeAccountAdmin(membership)" ng-hide="membership.approved")
+                Decline
+            .approved(ng-show='membership.approved')
+              .btn.btn-danger.btn-sm(ng-click="removeAccountAdmin(membership)")
+                Remove
+
